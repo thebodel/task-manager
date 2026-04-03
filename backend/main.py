@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import Base, engine, get_db
@@ -35,6 +35,17 @@ def get_projects(db: Session = Depends(get_db)):
     projects = db.query(Project).all()
     return projects
 
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    db.delete(project)
+    db.commit()
+
+    return {"message": "Project deleted successfully"}
 @app.post("/tasks", response_model=TaskRead)
 def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     new_task = Task(
@@ -56,3 +67,15 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 def get_tasks_by_project(project_id: int, db: Session = Depends(get_db)):
     tasks = db.query(Task).filter(Task.project_id == project_id).all()
     return tasks
+
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    db.delete(task)
+    db.commit()
+
+    return {"message": "Task deleted successfully"}
