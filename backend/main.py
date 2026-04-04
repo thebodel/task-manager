@@ -29,7 +29,6 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
 
     return new_project
 
-
 @app.get("/projects", response_model=list[ProjectRead])
 def get_projects(db: Session = Depends(get_db)):
     projects = db.query(Project).all()
@@ -68,7 +67,7 @@ def get_tasks_by_project(project_id: int, db: Session = Depends(get_db)):
     tasks = db.query(Task).filter(Task.project_id == project_id).all()
     return tasks
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/projects/{project_id}/tasks/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id).first()
 

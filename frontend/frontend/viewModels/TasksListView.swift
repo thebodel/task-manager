@@ -59,6 +59,27 @@ struct TasksListView: View {
                         .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
+                    .contextMenu {
+                        Button {
+                            print("Edit task \(project.id)\(task.id)")
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+
+                        Button(role: .destructive) {
+                            print("Delete task \(task.id) in  \(project.id)")
+                            Task {
+                                do {
+                                    try await APIService.shared.deleteTask(projectId: project.id, taskId: task.id)
+                                    tasks.removeAll { $0.id == task.id }
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }

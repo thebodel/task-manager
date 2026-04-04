@@ -53,16 +53,29 @@ struct ProjectsListView: View {
                             }
                             .padding(.vertical, 4)
                             .contextMenu {
-                                    Button("Edit") {
-                                        print("Edit task \(project.id)")
-                                    }
-
-                                    Button("Delete", role: .destructive) {
-                                        print("Delete task \(project.id)")
-                                    }
+                                Button {
+                                    print("Edit project \(project.id)")
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
                                 }
+
+                                Button(role: .destructive) {
+                                    print("Delete project \(project.id)")
+                                    Task {
+                                        do {
+                                            try await APIService.shared.deleteProject(projectId: project.id)
+                                            projects.removeAll { $0.id == project.id }
+                                        } catch {
+                                            errorMessage = error.localizedDescription
+                                        }
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                     }
+                    
                 }
             }
             .navigationTitle("Projects")

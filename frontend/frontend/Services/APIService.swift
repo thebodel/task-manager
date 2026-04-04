@@ -16,7 +16,7 @@ final class APIService {
     private let baseURL = "http://127.0.0.1:8000"
 
     func fetchProjects() async throws -> [Project] {
-        guard let url = URL(string: "\(baseURL)/projects") else {
+        guard let url = URL(string: "\(baseURL)/projects/") else {
             throw URLError(.badURL)
         }
 
@@ -30,6 +30,23 @@ final class APIService {
         let decoder = JSONDecoder()
         return try decoder.decode([Project].self, from: data)
     }
+    
+    func deleteProject(projectId: Int) async throws {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+    }
+    
 
     func fetchTasks(projectId: Int) async throws -> [TaskItem] {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)/tasks") else {
@@ -45,5 +62,21 @@ final class APIService {
 
         let decoder = JSONDecoder()
         return try decoder.decode([TaskItem].self, from: data)
+    }
+    
+    func deleteTask(projectId: Int,taskId: Int) async throws {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)/tasks/\(taskId)") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
     }
 }
