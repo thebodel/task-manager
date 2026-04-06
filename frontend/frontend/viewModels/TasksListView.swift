@@ -69,12 +69,7 @@ struct TasksListView: View {
                         Button(role: .destructive) {
                             print("Delete task \(task.id) in  \(project.id)")
                             Task {
-                                do {
-                                    try await APIService.shared.deleteTask(projectId: project.id, taskId: task.id)
-                                    tasks.removeAll { $0.id == task.id }
-                                } catch {
-                                    errorMessage = error.localizedDescription
-                                }
+                                await deleteTask(task)
                             }
                         } label: {
                             Label("Delete", systemImage: "trash")
@@ -100,5 +95,14 @@ struct TasksListView: View {
         }
 
         isLoading = false
+    }
+
+    private func deleteTask(_ task: TaskItem) async {
+        do {
+            try await APIService.shared.deleteTask(projectId: project.id, taskId: task.id)
+            tasks.removeAll { $0.id == task.id }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

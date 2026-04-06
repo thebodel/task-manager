@@ -102,7 +102,10 @@ struct ProjectsListView: View {
 
                                 Button("Save") {
                                     Task {
-                                        //await saveProjectInline()
+                                        await createProject(
+                                            projectTitle: newProjectTitle,
+                                            projectDesctiphion: newProjectDescription
+                                        )
                                     }
                                 }
                                 .buttonStyle(.borderedProminent)
@@ -159,10 +162,26 @@ struct ProjectsListView: View {
 
     private func deleteProject(_ project: Project) async {
         do {
+            let taskIds = try await APIService.shared.fetchTasks(projectId: project.id).map(\.id)
+            for id in taskIds {
+                try await APIService.shared.deleteTask(projectId: project.id, taskId: id)
+            }
             try await APIService.shared.deleteProject(projectId: project.id)
             withAnimation(.easeInOut(duration: 0.2)) {
                 projects.removeAll { $0.id == project.id }
             }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    private func createProject(projectTitle: String,projectDesctiphion: String) async {
+        do {
+            try await APIService.shared.createProject(
+                projectTitle: projectTitle,
+                projectDesctiphion: projectDesctiphion
+            )
+            await loadProjects()
+            closeCreateProjectWindow()
         } catch {
             errorMessage = error.localizedDescription
         }

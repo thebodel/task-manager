@@ -13,3 +13,8 @@ struct Project: Identifiable, Codable {
         case createdAt = "created_at"
     }
 }
+struct ProjectCreate: Codable {
+    let title: String
+    let description: String?
+    
+}

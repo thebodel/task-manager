@@ -10,10 +10,12 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         ProjectsListView()
+    
         
     }
 }
     #Preview {
         ContentView()
+            .frame(width: 500,height: 500)
     }
     
