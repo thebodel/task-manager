@@ -70,7 +70,6 @@ final class APIService {
         }
     }
     
-
     func fetchTasks(projectId: Int) async throws -> [TaskItem] {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)/tasks") else {
             throw URLError(.badURL)

@@ -76,7 +76,7 @@ struct ProjectsListView: View {
 
                 if isCreatingProject {
                     ZStack {
-                        Color.black.opacity(0.2)
+                        Color.black.opacity(0.4)
                             .ignoresSafeArea()
                             .onTapGesture {
                                 closeCreateProjectWindow()
