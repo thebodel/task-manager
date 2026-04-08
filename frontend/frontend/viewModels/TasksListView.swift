@@ -9,6 +9,33 @@
 import SwiftUI
 
 struct TasksListView: View {
+    enum Priority: String, CaseIterable, Identifiable {
+        case low = "Low"
+        case medium = "Medium"
+        case high = "High"
+        
+        var id: String { rawValue }
+    }
+    enum Status: String, CaseIterable, Identifiable {
+        case todo = "todo"
+        case inProgress = "in_progress"
+        case complete = "complete"
+        
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .todo:
+                return "To Do"
+            case .inProgress:
+                return "In Progress"
+            case .complete:
+                return "Complete"
+            }
+        }
+    }
+    
+    
     let project: Project
 
     @State private var tasks: [TaskItem] = []
@@ -16,14 +43,18 @@ struct TasksListView: View {
     @State private var errorMessage: String?
     @State private var isCreatingTask = false
     
-    struct newTask {
-          var newTaskTitle = ""
-          var newTaskDescription = ""
-          var newTaskStatus = ""
-          var newTaskPriority = ""
-          var newTaskDeadline = Date()
-    }
-    @State private var new_Task = newTask()
+    @State private var newTask = CreateTaskItem(
+        title: "",
+        description: "",
+        status: "",
+        priority: "",
+        deadline: Date(),
+        projectId: 0
+    )
+    
+    @State private var showPicker_status = false
+    @State private var showPicker_priority = false
+
 
     var body: some View {
         ZStack {
@@ -118,13 +149,13 @@ struct TasksListView: View {
                         }
 
                     VStack(alignment: .leading, spacing: 0) {
-                        TextField("New Task", text: $new_Task.newTaskTitle)
+                        TextField("New Task", text: $newTask.title)
                             .textFieldStyle(.plain)
                             .font(.system(size: 28, weight: .semibold))
                             .padding(.horizontal, 18)
                             .padding(.top, 18)
                         
-                        TextField("Notes", text: $new_Task.newTaskDescription, axis: .vertical)
+                        TextField("Notes", text: $newTask.description, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.system(.title3, weight: .medium))
                             .foregroundStyle(.secondary)
@@ -133,49 +164,138 @@ struct TasksListView: View {
                             .padding(.bottom, 10)
                         
                         
-                        HStack {
-                            Text("Status")
-                                .foregroundStyle(.secondary)
-                                .font(.system(size: 14, weight: .regular))
-                                .padding(.horizontal, 18)
-                            Spacer()
-                            
-                            Picker("", selection: $new_Task.newTaskStatus) {
-                                Text("To do").tag("toDo")
-                                Text("In progres").tag("inProgres")
-                                Text("Complete").tag("complete")
+                        HStack{
+                            Button {
+                                showPicker_status.toggle()
+                            } label: {
+                                HStack(spacing: 1) {
+                                    Image(systemName: "list.bullet.clipboard.fill")
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 24)
+                                    
+                                    Text("Status")
+                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14, weight: .regular))
+                                    
+                                    Spacer()
+                                    
+                                    Text(Status(rawValue: newTask.status)?.title ?? "")
+                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14, weight: .regular))
+                                  
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal,10)
+                                }
+                                .contentShape(Rectangle())
+                             }
+                            .buttonStyle(.plain)
+                            .popover(isPresented: $showPicker_status) {
+                                 VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Status.allCases) { option in
+                                        Button {
+                                            newTask.status = option.rawValue
+                                            showPicker_status = false
+                                        } label: {
+                                            HStack {
+                                                if newTask.status == option.rawValue {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.callout)
+                                                        .fontWeight(.semibold)
+                                                        .foregroundStyle(.primary)
+                                                        .frame(width: 20)
+                                                } else {
+                                                    Color.clear.frame(width: 20)
+                                                }
+
+                                                Text(option.title)
+                                                    .foregroundStyle(.primary)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 10)
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                                .frame(minWidth: 220)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .font(.system(size: 14, weight: .regular))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                        }
-                         .padding(.vertical, 5)
+        
+                    }.padding(.horizontal, 14)
+                     .padding(.vertical, 14)
+                    
                         
-                        HStack {
-                            Text("Priority")
-                                .foregroundStyle(.secondary)
-                                .font(.system(size: 14, weight: .regular))
-                                .padding(.horizontal, 18)
-                            Spacer()
+                        HStack{
+                            Button {
+                                showPicker_priority.toggle()
+                            } label: {
+                                HStack(spacing: 1) {
+                                    Image(systemName: "bell.fill")
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 24)
+                                    
+                                    Text("Priority")
+                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14, weight: .regular))
+                                    
+                                    Spacer()
+                                    
+                                    Text(newTask.priority.prefix(1).uppercased() + newTask.priority.dropFirst())
+                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14, weight: .regular))
+                                  
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal,10)
+                                }
+                                .contentShape(Rectangle())
+                             }
+                            .buttonStyle(.plain)
+                            .popover(isPresented: $showPicker_priority) {
+                                 VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Priority.allCases) { option in
+                                        Button {
+                                            newTask.priority = option.rawValue.lowercased()
+                                            showPicker_priority = false
+                                        } label: {
+                                            HStack {
+                                                if newTask.priority == option.rawValue.lowercased(){
+                                                    Image(systemName: "checkmark")
+                                                        .font(.callout)
+                                                        .fontWeight(.semibold)
+                                                        .foregroundStyle(.primary)
+                                                        .frame(width: 20)
+                                                } else {
+                                                    Color.clear.frame(width: 20)
+                                                }
 
-                            Picker("Priority", selection: $new_Task.newTaskPriority) {
-                                Text("Low").tag("low")
-                                Text("Medium    ").tag("medium")
-                                Text("High").tag("high")
+                                                Text(option.rawValue)
+                                                    .foregroundStyle(.primary)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 10)
+                                            .contentShape(Rectangle())
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.vertical, 6)
+                                .frame(minWidth: 220)
                             }
-                            .labelsHidden()
-                            .pickerStyle(.menu)
-                            .font(.system(size: 14, weight: .regular))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            
-                        }
-                         .padding(.vertical, 5)
-
+        
+                    }.padding(.horizontal, 14)
+                     .padding(.vertical, 14)
+                    
                         HStack {
-                            DatePicker("Deadline", selection: $new_Task.newTaskDeadline, displayedComponents: [.date])
+                            DatePicker("Deadline", selection: Binding(
+                                get: { newTask.deadline ?? Date() },
+                                set: { newTask.deadline = $0 }
+                            ), displayedComponents: [.date])
                                 .datePickerStyle(.automatic)
                                 .foregroundStyle(.secondary)
                                 .font(.system(size: 14,weight: .regular))
@@ -192,19 +312,22 @@ struct TasksListView: View {
                             Spacer()
 
                             Button("Save") {
-                                print("save task")
+                                Task{
+                                   await createTask()
+                                }
                             }
                             .buttonStyle(.borderedProminent)
-                            .disabled(new_Task.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty||new_Task.newTaskStatus.isEmpty||new_Task.newTaskPriority.isEmpty)
+                            .disabled(newTask.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newTask.status.isEmpty || newTask.priority.isEmpty)
                         }
                         .padding(18)
                     }
                     .frame(width: 350)
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(Color.white.opacity(0.88))
+                            .fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
                     )
-                    .shadow(color: .black.opacity(0.12), radius: 30, y: 12)
+
+                    .shadow(color: .black.opacity(0.06), radius: 18, y: 8)
                     .transition(.scale(scale: 0.96).combined(with: .opacity))
                 }
             }
@@ -215,10 +338,14 @@ struct TasksListView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             isCreatingTask = false
         }
-
-        new_Task.newTaskStatus = ""
-        new_Task.newTaskPriority = ""
-        new_Task.newTaskDeadline = Date()
+        newTask = CreateTaskItem(
+            title: "",
+            description: "",
+            status: "",
+            priority: "",
+            deadline: Date(),
+            projectId: project.id
+        )
     }
 
     private func loadTasks() async {
@@ -238,6 +365,17 @@ struct TasksListView: View {
         do {
             try await APIService.shared.deleteTask(projectId: project.id, taskId: task.id)
             tasks.removeAll { $0.id == task.id }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    private func createTask() async {
+        do {
+            var form = newTask
+            form.projectId = project.id
+            try await APIService.shared.createTask(form)
+            await loadTasks()
+            closeCreateTaskWindow()
         } catch {
             errorMessage = error.localizedDescription
         }

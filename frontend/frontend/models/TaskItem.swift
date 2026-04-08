@@ -31,12 +31,20 @@ struct TaskItem: Identifiable, Codable {
         case updatedAt = "updated_at"
     }
 }
-struct createTaskItem: Codable {
-    let title: String
-    let description: String?
-    let status: String
-    let priority: String
-    let deadline: String?
-    let projectId: Int
+struct CreateTaskItem: Codable {
+    var title: String
+    var description: String
+    var status: String
+    var priority: String
+    var deadline: Date?
+    var projectId: Int
 
+    enum CodingKeys: String, CodingKey {
+        case title
+        case description
+        case status
+        case priority
+        case deadline
+        case projectId = "project_id"
+    }
 }

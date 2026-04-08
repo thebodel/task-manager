@@ -15,6 +15,15 @@ final class APIService {
 
     private let baseURL = "http://127.0.0.1:8000"
 
+    struct APIError: LocalizedError {
+        let statusCode: Int
+        let message: String
+
+        var errorDescription: String? {
+            "HTTP \(statusCode): \(message)"
+        }
+    }
+
     func fetchProjects() async throws -> [Project] {
         guard let url = URL(string: "\(baseURL)/projects/") else {
             throw URLError(.badURL)
@@ -69,7 +78,27 @@ final class APIService {
             throw URLError(.badServerResponse)
         }
     }
-    
+    func createTask(_ form: CreateTaskItem) async throws {
+        guard let url = URL(string: "\(baseURL)/tasks") else {
+                throw URLError(.badURL)
+            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        request.httpBody = try encoder.encode(form)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard 200..<300 ~= httpResponse.statusCode else {
+            let message = String(data: data, encoding: .utf8) ?? "Unknown server error"
+            throw APIError(statusCode: httpResponse.statusCode, message: message)
+        }
+    }
     func fetchTasks(projectId: Int) async throws -> [TaskItem] {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)/tasks") else {
             throw URLError(.badURL)
