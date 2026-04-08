@@ -1,10 +1,15 @@
 import os
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./task_manager.db")
+load_dotenv()
 
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg://postgres:password@localhost:5432/task_manager"
+)
 
 engine = create_engine(
     DATABASE_URL,
@@ -18,6 +23,8 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
 def get_db():
     db = SessionLocal()
     try:
