@@ -137,7 +137,9 @@ struct TasksListView: View {
                 .task {
                     await loadTasks()
                 }
+#if os(macOS)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+#endif
             }
             
             if isCreatingTask {
@@ -324,7 +326,7 @@ struct TasksListView: View {
                     .frame(width: 350)
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(Color(nsColor: .windowBackgroundColor).opacity(0.96))
+                            .fill(modalBackgroundColor.opacity(0.96))
                     )
 
                     .shadow(color: .black.opacity(0.06), radius: 18, y: 8)
@@ -332,6 +334,14 @@ struct TasksListView: View {
                 }
             }
         }
+    }
+
+    private var modalBackgroundColor: Color {
+#if os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+#else
+        Color(uiColor: .systemBackground)
+#endif
     }
 
     private func closeCreateTaskWindow() {

@@ -13,7 +13,7 @@ final class APIService {
 
     private init() {}
 
-    private let baseURL = "http://127.0.0.1:8000"
+    private let baseURL = "https://task-manager-d6iv.onrender.com"
 
     struct APIError: LocalizedError {
         let statusCode: Int
