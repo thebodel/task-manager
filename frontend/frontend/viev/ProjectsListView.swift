@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ProjectsListView: View {
+    let userId:Int
     @State private var projects: [Project] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -34,7 +35,7 @@ struct ProjectsListView: View {
 
                             Button("Retry") {
                                 Task {
-                                    await loadProjects()
+                                    await loadProjects(userId: userId)
                                 }
                             }
                         }
@@ -104,7 +105,8 @@ struct ProjectsListView: View {
                                     Task {
                                         await createProject(
                                             projectTitle: newProjectTitle,
-                                            projectDesctiphion: newProjectDescription
+                                            projectDesctiphion: newProjectDescription,
+                                            userId: userId
                                         )
                                     }
                                 }
@@ -133,17 +135,17 @@ struct ProjectsListView: View {
                 }
             }
             .task {
-                await loadProjects()
+                await loadProjects(userId: userId)
             }
         }
     }
 
-    private func loadProjects() async {
+    private func loadProjects(userId: Int) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            projects = try await APIService.shared.fetchProjects()
+            projects = try await APIService.shared.fetchProjects(userId: userId)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -166,7 +168,7 @@ struct ProjectsListView: View {
             for id in taskIds {
                 try await APIService.shared.deleteTask(projectId: project.id, taskId: id)
             }
-            try await APIService.shared.deleteProject(projectId: project.id)
+            try await APIService.shared.deleteProject(projectId: project.id, userId: userId)
             withAnimation(.easeInOut(duration: 0.2)) {
                 projects.removeAll { $0.id == project.id }
             }
@@ -174,13 +176,14 @@ struct ProjectsListView: View {
             errorMessage = error.localizedDescription
         }
     }
-    private func createProject(projectTitle: String,projectDesctiphion: String) async {
+    private func createProject(projectTitle: String,projectDesctiphion: String,userId:Int) async {
         do {
             try await APIService.shared.createProject(
                 projectTitle: projectTitle,
-                projectDesctiphion: projectDesctiphion
+                projectDesctiphion: projectDesctiphion,
+                userId: userId
             )
-            await loadProjects()
+            await loadProjects(userId: userId)
             closeCreateProjectWindow()
         } catch {
             errorMessage = error.localizedDescription

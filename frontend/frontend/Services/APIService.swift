@@ -12,8 +12,9 @@ final class APIService {
     static let shared = APIService()
 
     private init() {}
+   // https://task-manager-d6iv.onrender.com
 
-    private let baseURL = "https://task-manager-d6iv.onrender.com"
+    private let baseURL = "http://127.0.0.1:8000"
 
     struct APIError: LocalizedError {
         let statusCode: Int
@@ -24,8 +25,8 @@ final class APIService {
         }
     }
 
-    func fetchProjects() async throws -> [Project] {
-        guard let url = URL(string: "\(baseURL)/projects/") else {
+    func fetchProjects(userId: Int) async throws -> [Project] {
+        guard let url = URL(string: "\(baseURL)/projects?user_id=\(userId)") else {
             throw URLError(.badURL)
         }
 
@@ -39,9 +40,8 @@ final class APIService {
         let decoder = JSONDecoder()
         return try decoder.decode([Project].self, from: data)
     }
-    
-    func deleteProject(projectId: Int) async throws {
-        guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
+    func deleteProject(projectId: Int, userId: Int) async throws {
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)?user_id=\(userId)") else {
             throw URLError(.badURL)
         }
 
@@ -56,7 +56,7 @@ final class APIService {
         }
     }
     
-    func createProject(projectTitle: String,projectDesctiphion: String) async throws {
+    func createProject(projectTitle: String,projectDesctiphion: String,userId: Int) async throws {
         guard let url = URL(string: "\(baseURL)/projects") else {
                 throw URLError(.badURL)
             }
@@ -66,7 +66,8 @@ final class APIService {
 
         let body = ProjectCreate(
             title: projectTitle,
-            description: projectDesctiphion
+            description: projectDesctiphion,
+            user_id: userId
         )
 
         request.httpBody = try JSONEncoder().encode(body)
@@ -129,5 +130,45 @@ final class APIService {
               200..<300 ~= httpResponse.statusCode else {
             throw URLError(.badServerResponse)
         }
+    }
+    
+    func createUser(form: UserCreate) async throws {
+        guard let url = URL(string: "\(baseURL)/users") else {
+                throw URLError(.badURL)
+            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        /*let body = ProjectCreate(
+            title: projectTitle,
+            description: projectDesctiphion
+        )*/
+
+        request.httpBody = try JSONEncoder().encode(form)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        print(data)
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+    }
+    func loginUser(form: UserCreate) async throws -> LoginResponse {
+        guard let url = URL(string: "\(baseURL)/login") else {
+                throw URLError(.badURL)
+            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(form)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        print(data)
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode(LoginResponse.self, from: data)
     }
 }

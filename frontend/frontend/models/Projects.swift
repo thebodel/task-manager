@@ -16,5 +16,5 @@ struct Project: Identifiable, Codable {
 struct ProjectCreate: Codable {
     let title: String
     let description: String?
-    
+    let user_id: Int
 }
