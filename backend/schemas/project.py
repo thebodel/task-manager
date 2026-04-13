@@ -6,7 +6,10 @@ class ProjectCreate(BaseModel):
     title: str
     description: str | None = None
     user_id: int
-
+class ProjectUpdate(BaseModel):
+    title: str
+    description: str | None = None
+    user_id: int
 
 class ProjectRead(BaseModel):
     id: int

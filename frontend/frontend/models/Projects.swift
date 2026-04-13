@@ -18,3 +18,9 @@ struct ProjectCreate: Codable {
     let description: String?
     let user_id: Int
 }
+
+struct ProjectUpdate: Codable {
+    let title: String
+    let description: String?
+    let user_id: Int
+}

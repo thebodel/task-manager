@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct ProjectsListView: View {
+    @Environment(\.dismiss) private var dismiss
+
     let userId:Int
     @State private var projects: [Project] = []
     @State private var isLoading = false
@@ -19,6 +21,18 @@ struct ProjectsListView: View {
     @State private var newProjectDescription = ""
 
     var body: some View {
+        VStack {
+                }
+        .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .navigation) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "rectangle.portrait.and.arrow.forward")
+                        }
+                    }
+                }
         NavigationStack {
             ZStack {
                 Group {
@@ -43,6 +57,7 @@ struct ProjectsListView: View {
                     } else if projects.isEmpty {
                         Text("No projects yet")
                             .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     } else {
                         List {
                             ForEach(projects) { project in
@@ -67,7 +82,14 @@ struct ProjectsListView: View {
                                         } label: {
                                             Label("Delete", systemImage: "trash")
                                         }
+                                        Button(){
+                                            
+                                        }
+                                        label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
                                     }
+                                   
                                 }
                             }
                         }
@@ -84,15 +106,20 @@ struct ProjectsListView: View {
                             }
 
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("New Project")
-                                .font(.title3)
-                                .fontWeight(.semibold)
+                            TextField("New Task", text: $newProjectTitle)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 28, weight: .semibold))
+                                .padding(.horizontal, 18)
+                                .padding(.top, 18)
 
-                            TextField("Project title", text: $newProjectTitle)
-                                .textFieldStyle(.roundedBorder)
-
-                            TextField("Description", text: $newProjectDescription)
-                                .textFieldStyle(.roundedBorder)
+                            TextField("Notes", text: $newProjectDescription, axis: .vertical)
+                                .textFieldStyle(.plain)
+                                .font(.system(.title3, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 18)
+                                .padding(.top, 10)
+                                .padding(.bottom, 10)
+                            
 
                             HStack {
                                 Button("Cancel") {
@@ -189,4 +216,9 @@ struct ProjectsListView: View {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+#Preview {
+    ProjectsListView(userId: 50)
+        .frame(width: 500,height: 200)
 }

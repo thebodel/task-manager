@@ -6,6 +6,7 @@ struct LoginScreen: View {
 
     @State private var goToProjects = false
     @State private var loggedUserId = 0
+    @State private var hasAppearedOnce = false
 
     @State private var newUser = UserCreate(
         login: "",
@@ -15,11 +16,6 @@ struct LoginScreen: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ZStack {
-                    Color.gray.opacity(0.2)
-                        .ignoresSafeArea()
-                }
-                .blur(radius: 4)
 
                 ZStack {
                     Color.gray.opacity(0.04)
@@ -38,6 +34,9 @@ struct LoginScreen: View {
                             )
                             .font(.system(size: 15, weight: .semibold))
                             .padding(.top, 5)
+                            .onChange(of: newUser.login) { _, _ in
+                                errorMessage = nil
+                            }
 
                         SecureField("password", text: $newUser.password)
                             .textFieldStyle(.plain)
@@ -49,11 +48,17 @@ struct LoginScreen: View {
                             )
                             .font(.system(size: 15, weight: .semibold))
                             .padding(.top, 5)
+                            .onChange(of: newUser.password) { _, _ in
+                                errorMessage = nil
+                            }
 
                         Button("Submit") {
                             if selectedTab == 1 {
                                 Task {
-                                    await createUser(form: newUser)
+                                    if let response = await createUser(form: newUser) {
+                                        loggedUserId = response.userId
+                                        goToProjects = true
+                                    }
                                 }
                             } else if selectedTab == 0 {
                                 Task {
@@ -86,9 +91,11 @@ struct LoginScreen: View {
                                 .padding(.top, 8)
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onChange(of: selectedTab) { _, _ in
+                        errorMessage = nil
+                    }
                     .padding()
-                    .frame(width: 280)
+                    .frame(maxWidth: 320)
                     .background(Color(nsColor: .windowBackgroundColor))
                     .cornerRadius(16)
                     .shadow(radius: 10)
@@ -97,14 +104,24 @@ struct LoginScreen: View {
             .navigationDestination(isPresented: $goToProjects) {
                 ProjectsListView(userId: loggedUserId)
             }
-        }
+            .onChange(of: goToProjects) { _, isPresented in
+                if hasAppearedOnce && !isPresented {
+                    errorMessage = nil
+                    newUser.login = ""
+                    newUser.password = ""
+                }
+                if !hasAppearedOnce {
+                    hasAppearedOnce = true
+                }
+            }
+     }
     }
-
-    private func createUser(form: UserCreate) async {
+    private func createUser(form: UserCreate) async -> LoginResponse? {
         do {
-            try await APIService.shared.createUser(form: form)
+            return try await APIService.shared.createUser(form: form)
         } catch {
             errorMessage = error.localizedDescription
+            return nil
         }
     }
 

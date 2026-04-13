@@ -81,6 +81,7 @@ struct TasksListView: View {
                     } else if tasks.isEmpty {
                         Text("No tasks in this project")
                             .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     } else {
                         List(tasks) { task in
                             VStack(alignment: .leading, spacing: 6) {

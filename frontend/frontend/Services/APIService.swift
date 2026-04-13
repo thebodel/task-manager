@@ -40,6 +40,8 @@ final class APIService {
         let decoder = JSONDecoder()
         return try decoder.decode([Project].self, from: data)
     }
+    
+    
     func deleteProject(projectId: Int, userId: Int) async throws {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)?user_id=\(userId)") else {
             throw URLError(.badURL)
@@ -79,6 +81,25 @@ final class APIService {
             throw URLError(.badServerResponse)
         }
     }
+    
+    func updateProject(newProject: ProjectUpdate,projectId: Int) async throws{
+        guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
+                throw URLError(.badURL)
+            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(newProject)
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
+
+    }
+    
     func createTask(_ form: CreateTaskItem) async throws {
         guard let url = URL(string: "\(baseURL)/tasks") else {
                 throw URLError(.badURL)
@@ -100,6 +121,8 @@ final class APIService {
             throw APIError(statusCode: httpResponse.statusCode, message: message)
         }
     }
+    
+    
     func fetchTasks(projectId: Int) async throws -> [TaskItem] {
         guard let url = URL(string: "\(baseURL)/projects/\(projectId)/tasks") else {
             throw URLError(.badURL)
@@ -132,27 +155,33 @@ final class APIService {
         }
     }
     
-    func createUser(form: UserCreate) async throws {
+    func createUser(form: UserCreate) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/users") else {
                 throw URLError(.badURL)
             }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        /*let body = ProjectCreate(
-            title: projectTitle,
-            description: projectDesctiphion
-        )*/
-
         request.httpBody = try JSONEncoder().encode(form)
-
+        
         let (data, response) = try await URLSession.shared.data(for: request)
-        print(data)
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
+        if !(200..<300).contains(httpResponse.statusCode) {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = json["detail"] as? String {
+                throw NSError(
+                    domain: "",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: detail]
+                )
+            } else {
+                throw URLError(.badServerResponse)
+            }
+        }
+        return try JSONDecoder().decode(LoginResponse.self, from: data)
     }
     func loginUser(form: UserCreate) async throws -> LoginResponse {
         guard let url = URL(string: "\(baseURL)/login") else {
@@ -164,11 +193,24 @@ final class APIService {
         request.httpBody = try JSONEncoder().encode(form)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        print(data)
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
+        
+        if !(200..<300).contains(httpResponse.statusCode) {
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = json["detail"] as? String {
+                throw NSError(
+                    domain: "",
+                    code: httpResponse.statusCode,
+                    userInfo: [NSLocalizedDescriptionKey: detail]
+                )
+            } else {
+                throw URLError(.badServerResponse)
+            }
+        }
+        
         return try JSONDecoder().decode(LoginResponse.self, from: data)
     }
 }

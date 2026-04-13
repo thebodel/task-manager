@@ -8,7 +8,7 @@ from backend.models.project import Project
 from backend.models.task import Task
 from backend.models.user import User
 
-from backend.schemas.project import ProjectCreate, ProjectRead
+from backend.schemas.project import ProjectCreate, ProjectRead,ProjectUpdate
 from backend.schemas.task import TaskCreate, TaskRead
 from backend.schemas.user import UserCreate, UserLogin
 
@@ -54,6 +54,21 @@ def delete_project(user_id: int,project_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Project deleted successfully"}
+
+@app.put("/projects/{project_id}")
+def update_project(project_data: ProjectUpdate, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(
+        Project.id == project_data.project_id,
+        Project.user_id == project_data.user_id
+    ).first()
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    project.title = project_data.title
+    project.description = project_data.description
+    db.commit()
+    db.refresh(project)
+    return project
+
 @app.post("/tasks", response_model=TaskRead)
 def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     new_task = Task(
@@ -90,19 +105,20 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
 
 @app.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.login == user.login).first()
+
+    if db_user is not None:
+        raise HTTPException(status_code=400, detail="User already exists")
+
     hashed_password = hash_password(user.password)
     new_user = User(
-    login=user.login,
-    password=hashed_password
+        login=user.login,
+        password=hashed_password
     )
-    db_user = db.query(User).filter(User.login == user.login).first()
-    if db_user is None:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        return {"message": "User created successfully"}
-    else:
-        return {"message": "User already exists"}
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"user_id": new_user.id}
 
 @app.post("/login")
 def login_user(user: UserLogin, db: Session = Depends(get_db)):
@@ -113,5 +129,4 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
 
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid login or password")
-    id_user = db_user.id
     return {"user_id": db_user.id}
