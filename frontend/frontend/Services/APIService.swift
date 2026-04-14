@@ -82,14 +82,15 @@ final class APIService {
         }
     }
     
-    func updateProject(newProject: ProjectUpdate,projectId: Int) async throws{
-        guard let url = URL(string: "\(baseURL)/projects/\(projectId)") else {
+    func updateProject(updateProject: ProjectUpdate,user_id: Int,project_id: Int) async throws{
+        guard let url = URL(string: "\(baseURL)/projects/\(project_id)?user_id=\(user_id)")else {
                 throw URLError(.badURL)
             }
         var request = URLRequest(url: url)
+        
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(newProject)
+        request.httpBody = try JSONEncoder().encode(updateProject)
 
         let (_, response) = try await URLSession.shared.data(for: request)
         

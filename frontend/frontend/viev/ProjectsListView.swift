@@ -17,6 +17,9 @@ struct ProjectsListView: View {
     @State private var errorMessage: String?
 
     @State private var isCreatingProject = false
+    @State private var isUpdateingProject = false
+    @State private var projectBeingEdited: Project?
+    
     @State private var newProjectTitle = ""
     @State private var newProjectDescription = ""
 
@@ -83,7 +86,12 @@ struct ProjectsListView: View {
                                             Label("Delete", systemImage: "trash")
                                         }
                                         Button(){
-                                            
+                                            projectBeingEdited = project
+                                            newProjectTitle = project.title
+                                            newProjectDescription = project.description ?? ""
+                                            withAnimation(.easeInOut(duration: 0.25)) {
+                                                isUpdateingProject = true
+                                            }
                                         }
                                         label: {
                                             Label("Edit", systemImage: "pencil")
@@ -95,7 +103,61 @@ struct ProjectsListView: View {
                         }
                     }
                 }
-                .blur(radius: isCreatingProject ? 4 : 0)
+                .blur(radius: (isCreatingProject||isUpdateingProject) ? 4 : 0)
+                
+                if isUpdateingProject {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                closeCreateProjectWindow()
+                            }
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            TextField("New Task", text: $newProjectTitle)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 28, weight: .semibold))
+                                .padding(.horizontal, 18)
+                                .padding(.top, 18)
+
+                            TextField("Notes", text: $newProjectDescription, axis: .vertical)
+                                .textFieldStyle(.plain)
+                                .font(.system(.title3, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 18)
+                                .padding(.top, 10)
+                                .padding(.bottom, 10)
+                            
+
+                            HStack {
+                                Button("Cancel") {
+                                    closeCreateProjectWindow()
+                                }
+
+                                Spacer()
+
+                                Button("Save") {
+                                    Task {
+                                        let projectUpdate = ProjectUpdate(
+                                            title: newProjectTitle,
+                                            description: newProjectDescription,
+
+                                        )
+                                        await updateProject(newProject: projectUpdate,project_id: projectBeingEdited!.id,user_id:userId)
+                                        
+                                    }
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(newProjectTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }
+                        }
+                        .padding(20)
+                        .frame(width: 360)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: .black.opacity(0.05), radius: 24, y: 12)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                    }
+                }
 
                 if isCreatingProject {
                     ZStack {
@@ -183,10 +245,12 @@ struct ProjectsListView: View {
     private func closeCreateProjectWindow() {
         withAnimation(.easeInOut(duration: 0.25)) {
             isCreatingProject = false
+            isUpdateingProject=false
         }
 
         newProjectTitle = ""
         newProjectDescription = ""
+        projectBeingEdited = nil
     }
 
     private func deleteProject(_ project: Project) async {
@@ -210,6 +274,15 @@ struct ProjectsListView: View {
                 projectDesctiphion: projectDesctiphion,
                 userId: userId
             )
+            await loadProjects(userId: userId)
+            closeCreateProjectWindow()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    private func updateProject(newProject: ProjectUpdate,project_id: Int,user_id: Int) async {
+        do {
+            try await APIService.shared.updateProject(updateProject: newProject,user_id:user_id, project_id:project_id )
             await loadProjects(userId: userId)
             closeCreateProjectWindow()
         } catch {

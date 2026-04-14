@@ -56,10 +56,10 @@ def delete_project(user_id: int,project_id: int, db: Session = Depends(get_db)):
     return {"message": "Project deleted successfully"}
 
 @app.put("/projects/{project_id}")
-def update_project(project_data: ProjectUpdate, db: Session = Depends(get_db)):
+def update_project(user_id: int, project_id: int,project_data: ProjectUpdate, db: Session = Depends(get_db)):
     project = db.query(Project).filter(
-        Project.id == project_data.project_id,
-        Project.user_id == project_data.user_id
+        Project.id == project_id,
+        Project.user_id == user_id
     ).first()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
