@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from backend.database import Base, engine, get_db
@@ -9,7 +10,7 @@ from backend.models.task import Task
 from backend.models.user import User
 
 from backend.schemas.project import ProjectCreate, ProjectRead,ProjectUpdate
-from backend.schemas.task import TaskCreate, TaskRead
+from backend.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from backend.schemas.user import UserCreate, UserLogin
 
 Base.metadata.create_all(bind=engine)
@@ -90,18 +91,32 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 def get_tasks_by_project(project_id: int, db: Session = Depends(get_db)):
     tasks = db.query(Task).filter(Task.project_id == project_id).all()
     return tasks
-
-@app.delete("/projects/{project_id}/tasks/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db)):
+@app.get("/projects/{project_id}/tasks/{task_id}", response_model=TaskRead)
+def get_task_by_id(task_id: int, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id).first()
+    return task
+@app.delete("/projects/{project_id}/tasks/{task_id}")
+def delete_task(project_id: int,task_id: int, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id,
+                                 Task.project_id == project_id)
+    return task
 
+@app.put("/projects/{project_id}/tasks/{task_id}")
+def update_task(project_id: int,task_id: int,task_data:TaskUpdate,db: Session = Depends(get_db)):
+    task= db.query(Task).filter(
+        Task.id == task_id,
+        Task.project_id == project_id
+    ).first()
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-
-    db.delete(task)
+    task.title = task_data.title
+    task.description = task_data.description
+    task.status = task_data.status
+    task.priority = task_data.priority
+    task.deadline = task_data.deadline
     db.commit()
-
-    return {"message": "Task deleted successfully"}
+    db.refresh(task)
+    return task
 
 @app.post("/users")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):

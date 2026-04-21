@@ -10,6 +10,12 @@ class TaskCreate(BaseModel):
     deadline: datetime | None = None
     project_id: int
 
+class TaskUpdate(BaseModel):
+    title: str
+    description: str | None = None
+    status: str
+    priority: str
+    deadline: datetime | None = None
 
 class TaskRead(BaseModel):
     id: int

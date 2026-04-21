@@ -98,7 +98,23 @@ final class APIService {
               200..<300 ~= httpResponse.statusCode else {
             throw URLError(.badServerResponse)
         }
+    }
+    
+    func updateTask(updateTask: TaskUpdate,project_id: Int,task_id: Int) async throws{
+        guard let url = URL(string: "\(baseURL)/projects/\(project_id)/tasks/\(task_id)")else {
+                throw URLError(.badURL)
+            }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(updateTask)
 
+        let (_, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              200..<300 ~= httpResponse.statusCode else {
+            throw URLError(.badServerResponse)
+        }
     }
     
     func createTask(_ form: CreateTaskItem) async throws {

@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct TasksListView: View {
+    @Environment(\.dismiss) private var dismiss
+    
     enum Priority: String, CaseIterable, Identifiable {
         case low = "Low"
         case medium = "Medium"
@@ -42,6 +44,8 @@ struct TasksListView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var isCreatingTask = false
+    @State private var isUpdateingTask = false
+    @State private var selectedTaskId: Int?
     
     @State private var newTask = CreateTaskItem(
         title: "",
@@ -55,8 +59,30 @@ struct TasksListView: View {
     @State private var showPicker_status = false
     @State private var showPicker_priority = false
 
+    private static let deadlineParsers: [ISO8601DateFormatter] = {
+        let withFractionalSeconds = ISO8601DateFormatter()
+        withFractionalSeconds.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        let standard = ISO8601DateFormatter()
+        standard.formatOptions = [.withInternetDateTime]
+
+        return [withFractionalSeconds, standard]
+    }()
+
 
     var body: some View {
+        VStack {
+                }
+        .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .navigation) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "arrow.uturn.backward")
+                        }
+                    }
+                }
         ZStack {
             NavigationStack {
                 Group {
@@ -105,7 +131,17 @@ struct TasksListView: View {
                             .padding(.vertical, 4)
                             .contextMenu {
                                 Button {
-                                    print("Edit task \(project.id)\(task.id)")
+                                    print("Edit task \(project.id) \(task.id)")
+                                    newTask = CreateTaskItem(
+                                        title: task.title,
+                                        description: task.description ?? "",
+                                        status: task.status,
+                                        priority: task.priority,
+                                        deadline: deadline(from: task.deadline),
+                                        projectId: task.projectId
+                                    )
+                                    selectedTaskId = task.id
+                                    isUpdateingTask=true
                                 } label: {
                                     Label("Edit", systemImage: "pencil")
                                 }
@@ -141,6 +177,19 @@ struct TasksListView: View {
 #if os(macOS)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
 #endif
+            }
+            if isUpdateingTask, let selectedTaskId {
+                CreateTask(
+                    newTask: $newTask,
+                    saveOrUpdate: .constant(1),
+                    isPresented: $isUpdateingTask,
+                    taskId: selectedTaskId,
+                    onClose: {
+                        Task {
+                            await loadTasks()
+                        }
+                    }
+                )
             }
             
             if isCreatingTask {
@@ -357,6 +406,20 @@ struct TasksListView: View {
             deadline: Date(),
             projectId: project.id
         )
+    }
+
+    private func deadline(from value: String?) -> Date? {
+        guard let value, !value.isEmpty else {
+            return nil
+        }
+
+        for parser in Self.deadlineParsers {
+            if let date = parser.date(from: value) {
+                return date
+            }
+        }
+
+        return nil
     }
 
     private func loadTasks() async {
